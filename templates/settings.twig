@@ -6,13 +6,24 @@
 			<table class="data fullwidth">
 				<thead>
 					<th>Section</th>
+					<th>Entry Type</th>
 					<th>Email Addresses (separated by comma)</th>
 					<th>Email Subject (ex: [Email Subject]: [Entry Title])</th>
+					<th>Email Template</th>
 					<th>Enable Email</th>
 				</thead>
 				{% for handle, sectionData in editableSections %}
 					<tr>
-						<td>{{ sectionData['section'].name }}</td>
+						<td>
+							{% if sectionData['entryType'].name|default is empty %}
+								{{ sectionData['section'].name }}
+							{% endif %}
+						</td>
+						<td>
+							{% if sectionData['entryType'].name|default is not empty %}
+								&hookrightarrow; {{ sectionData['entryType'].name|default }}
+							{% endif %}
+						</td>
 						<td>
 							{{ forms.text({
 								name: "emailAddresses[" ~ handle ~ "]",
@@ -23,6 +34,12 @@
 							{{ forms.text({
 								name: "emailSubject[" ~ handle ~ "]",
 								value:   (settings.emailSubject[handle] is defined and settings.emailSubject[handle] is not empty ? settings.emailSubject[handle] : ''),
+							}) }}
+						</td>
+						<td>
+							{{ forms.text({
+								name: "emailTemplate[" ~ handle ~ "]",
+								value:   (settings.emailTemplate[handle] is defined and settings.emailTemplate[handle] is not empty ? settings.emailTemplate[handle] : ''),
 							}) }}
 						</td>
 						<td>
