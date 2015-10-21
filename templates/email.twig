@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>{{entry.title}}</title>
+	<style media="screen">
+		body {
+			font-family:Arial, sans-serif;
+			font-size:12px;
+		}
+
+		table {
+			border:0;
+			text-align:left;
+			padding:10px;
+			border:1px solid #ddd;
+		}
+
+		table table {
+			padding:4px;
+			font-size:smaller;
+			width:100%;
+		}
+
+		th {
+			vertical-align:top;
+			text-align:left;
+		}
+
+		td {
+			vertical-align:top;
+		}
+	</style>
+</head>
+<body>
+	<h1>
+		{{entry.title}}
+	</h1>
+	<h2>
+		Default Template
+	</h2>
+
+	<table>
+	<thead>
+		<tr>
+			<th>
+				{{'Field Name'|t}}
+			</th>
+			<th>
+				{{'Field Value'|t}}
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for k, v in craft.request.post.fields %}
+			<tr>
+				<th>
+					{{k}}
+				</th>
+				<td>
+					{% if v is iterable %}
+						<table>
+						<thead>
+							<tr>
+								<th>
+									{{'Field Name'|t}}
+								</th>
+								<th>
+									{{'Field Value'|t}}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+						{% for kk, vv in v %}
+							<tr>
+								<th>{{kk}}</th>
+								<td>{{vv}}</td>
+							</tr>
+						{% endfor %}
+						</tbody>
+						</table>
+					{% else %}
+						{{v}}
+					{% endif %}
+				</td>
+			</tr>
+		{% endfor %}
+	</tbody>
+	</table>
+</body>
+</html>
