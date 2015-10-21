@@ -52,7 +52,16 @@ class GuestEntriesEmailPlugin extends BasePlugin {
 					$body = craft()->templates->render($emailTemplate, $data);
 					$email->htmlBody = $body;
 					$email->body = strip_tags($body);
-					craft()->email->sendEmail($email);
+
+					// Force a silent fail - the entry is saved already,
+					// so while not ideal, we might as well get on with it.
+					// @see http://craftcms.stackexchange.com/a/255
+					try {
+						craft()->email->sendEmail($email);
+					} catch (\Exception $e) {
+						self::log('Error sending email: ' . $e->getMessage());
+						break;
+					}
 				}
 			}
 		});
