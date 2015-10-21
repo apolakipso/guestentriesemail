@@ -28,16 +28,16 @@ The plugin supports differentiating between entry types as well, not just betwee
 
 ## Releases
 
-#### *0.1.2*
+##### 0.1.2
 
 * Added Twig support
 * Added support for different entry types
 
-#### *0.1.1*
+##### 0.1.1
+
 * Forked the original repo
 * Some basic clean up
 
-#### *0.1.0*
-* Send basic emails from text and textarea form fields
+##### 0.1.0
 
-Please, let me know if this plugin is useful or if you have any suggestions or issues. [@wbrowar](https://twitter.com/wbrowar)
+* Send basic emails from text and textarea form fields
