@@ -7,7 +7,7 @@ class GuestEntriesEmailPlugin extends BasePlugin {
 	protected $_subject = '{{handle|t}}: {{entry.title}}';
 
 	public function init() {
-		craft()->on('guestEntries.beforeSave', function(GuestEntriesEvent $event) {
+		craft()->on('guestEntries.onSuccess', function(GuestEntriesEvent $event) {
 			$entryModel = $event->params['entry'];
 			$section = craft()->sections->getSectionById($entryModel['attributes']['sectionId']);
 			$entryTypeHandle = $entryModel->getType()->handle;
