@@ -1,108 +1,80 @@
 <?php
 namespace Craft;
 
-class GuestEntriesEmailPlugin extends BasePlugin
-{
+class GuestEntriesEmailPlugin extends BasePlugin {
 
-	public function init()
-	{
+	protected $_template = 'guestentriesemail/email';
+	protected $_subject = '{{handle|t}}: {{entry.title}}';
+
+	public function init() {
 		craft()->on('guestEntries.beforeSave', function(GuestEntriesEvent $event) {
-			// get entry object
 			$entryModel = $event->params['entry'];
-			$sectionId = $entryModel['attributes']['sectionId'];
-			$section = craft()->sections->getSectionById($sectionId);
-			$sectionHandle = $section['entryTypes'][0]['attributes']['handle'];
+			$section = craft()->sections->getSectionById($entryModel['attributes']['sectionId']);
+			$entryTypeHandle = $entryModel->getType()->handle;
+			$settings = craft()->plugins->getPlugin('guestentriesemail')->getSettings()->attributes;
 
-			// get settings
-			//$settings = $this->getSettings();
-			$settings = craft()->plugins->getPlugin('guestentriesemail')->getSettings();
-			$sendEmail = $settings['attributes']['sendEmail'][$sectionHandle];
-			$emailSubject = $settings['attributes']['emailSubject'][$sectionHandle] . ': ' . $entryModel['title'];
-			$emailAddresses = $settings['attributes']['emailAddresses'][$sectionHandle];
+			// check most specific first, e.g. inquiries_appointment
+			$handle = $section->handle . '_' . $entryTypeHandle;
 
-			if ($sendEmail === '1') {
-				// setup sendto email addresses
+			// falls back to section only, e.g. inquiries
+			if (!isset($settings['sendEmail'][$handle])) {
+				$handle = $section->handle;
+			}
+
+			$emailSubject = $settings['emailSubject'][$handle];
+			$emailAddresses = $settings['emailAddresses'][$handle];
+			$emailTemplate = $settings['emailTemplate'][$handle];
+
+			if (empty($emailTemplate)) {
+				$emailTemplate = $this->_template;
+			}
+
+			if (empty($emailSubject)) {
+				$emailSubject = $this->_subject;
+			}
+
+			// send email notification
+			if (
+				$settings['sendEmail'][$handle] === '1' &&
+				!empty($emailAddresses) &&
+				$event->isValid == true
+			) {
+				$data = [
+					'handle' => $handle,
+					'entry' => $entryModel,
+				];
 				$sendToEmails = array_map('trim', explode(',', $emailAddresses));
 
-				// assemble message
-				$message = '<p><b>Title:</b> ' . $entryModel->title . '</p>';
-
-				$entryAttributes = craft()->request->post['fields'];
-				foreach ($entryAttributes as $key => $value) {
-					if ($value != NULL) {
-						$fieldTitle = craft()->fields->getFieldByHandle($key);
-
-						if ($fieldTitle != NULL) {
-							$message .= '<p><b>' . $fieldTitle . ':</b> ' . $value . '</p>';
-						} else {
-							$message .= '<p><b>' . $key . ':</b> ' . $value . '</p>';
-						}
-					}
-				}
-
-				// send email notification
-				if ($event->isValid == true) {
-					foreach ($sendToEmails as $value) {
-						$email = new EmailModel();
-						$email->toEmail = $value;
-						$email->subject = $emailSubject;
-						$email->body    = $message;
-
-						craft()->email->sendEmail($email);
-					}
+				foreach ($sendToEmails as $value) {
+					$email = new EmailModel();
+					$email->toEmail = $value;
+					$email->subject = craft()->templates->renderString($emailSubject, $data);
+					$body = craft()->templates->render($emailTemplate, $data);
+					$email->htmlBody = $body;
+					$email->body = strip_tags($body);
+					craft()->email->sendEmail($email);
 				}
 			}
 		});
 	}
 
-	public function getName()
-	{
-		return Craft::t('Guest Entries Email Notification');
-	}
-
-	public function getVersion()
-	{
-		return '0.1.1';
-	}
-
-	public function getDeveloper()
-	{
-		return 'Will Browar';
-	}
-
-	public function getDeveloperUrl()
-	{
-		return 'http://wbrowar.com';
-	}
-
-	public function hasCpSection()
-	{
-		return false;
-	}
-
-	protected function defineSettings()
-	{
-		return [
-			'emailAddresses'  => AttributeType::Mixed,
-			'emailSubject'    => AttributeType::Mixed,
-			'sendEmail'       => AttributeType::Mixed,
-		];
-	}
-
-	public function getSettingsHtml()
-	{
+	public function getSettingsHtml() {
 		$guestEntriesPlugin = craft()->plugins->getPlugin('guestentries', true);
 		$guestEntriesPluginInstalled = $guestEntriesPlugin !== NULL;
-
 		$editableSections = [];
 		$allSections = craft()->sections->getAllSections();
 
-		foreach ($allSections as $section)
-		{
+		foreach ($allSections as $section) {
 			// No sense in doing this for singles.
-			if ($section->type !== 'single')
-			{
+			if ($section->type !== 'single') {
+				// Adds a row for the section
 				$editableSections[$section->handle] = ['section' => $section];
+
+				// Adds a row for each specific entry type
+				foreach ($section->getEntryTypes() as $entryType) {
+					$handle = $section->handle . '_' . $entryType->handle;
+					$editableSections[$handle] = ['section' => $section, 'entryType' => $entryType];
+				}
 			}
 		}
 
@@ -112,5 +84,34 @@ class GuestEntriesEmailPlugin extends BasePlugin
 			'editableSections' => $editableSections,
 			'guestEntriesPluginInstalled' => $guestEntriesPluginInstalled,
 		]);
+	}
+
+	protected function defineSettings() {
+		return [
+			'emailAddresses' => AttributeType::Mixed,
+			'emailSubject' => AttributeType::Mixed,
+			'emailTemplate' => AttributeType::Mixed,
+			'sendEmail' => AttributeType::Mixed,
+		];
+	}
+
+	public function getName() {
+		return Craft::t('Guest Entries Email Notification');
+	}
+
+	public function getVersion() {
+		return '0.1.2';
+	}
+
+	public function getDeveloper() {
+		return 'Apola Kipso, Will Browar';
+	}
+
+	public function getDeveloperUrl() {
+		return 'https://github.com/apolakipso';
+	}
+
+	public function hasCpSection() {
+		return false;
 	}
 }
